@@ -70,4 +70,16 @@ public class CustomerServiceImpl implements CustomerServiceInter {
             producer.send("purchase-failed-topic",event.transactionId());
         }
     }
+
+    @Override
+    @Transactional
+    public void processRefund(Event event) {
+         try{
+             transferMoney(event);
+             producer.send("refund-end-topic",event.transactionId());
+         }catch (Exception exception){
+             producer.send("refund-failed-topic",event.transactionId());
+
+         }
+    }
 }

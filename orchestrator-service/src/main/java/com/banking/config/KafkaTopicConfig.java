@@ -76,4 +76,34 @@ public class KafkaTopicConfig {
         return TopicBuilder.name("purchase-cancel-topic")
                 .build();
     }
+
+
+    @Bean
+    public NewTopic createRefundTopic(){
+        return TopicBuilder.name("create-refund-topic").build();
+    }
+
+
+    @Bean
+    public NewTopic endRefundTopic(){
+        return TopicBuilder.name("refund-end-topic").build();
+    }
+
+
+    @Bean
+    public NewTopic failedRefundTopic(){
+        return TopicBuilder.name("refund-failed-topic").build();
+    }
+
+
+    @Bean
+    public NewTopic successRefundTopic(){
+        return TopicBuilder.name("refund-success-topic").build();
+    }
+
+
+    @Bean
+    public NewTopic cancelRefundTopic(){
+        return TopicBuilder.name("refund-cancel-topic").build();
+    }
 }

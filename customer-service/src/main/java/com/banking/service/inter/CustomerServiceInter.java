@@ -13,4 +13,6 @@ public interface CustomerServiceInter {
      void  processTransfer(Event event);
 
     void processPurchase(Event event);
+
+    void processRefund(Event event);
 }

@@ -42,4 +42,18 @@ public class ManageServiceImpl implements ManageServiceInter {
     public void handlePurchaseFailed(Long id) {
         producer.send("purchase-cancel-topic", id);
     }
+
+    public void handleRefundCreate(Event event) {
+        kafkaTemplate.send("refund-start-topic", event);
+
+    }
+
+    public void handleRefundFailed(Long event) {
+        producer.send("refund-cancel-topic", event);
+    }
+
+
+    public void handleRefundSuccess(Long event) {
+        producer.send("refund-success-topic", event);
+    }
 }
