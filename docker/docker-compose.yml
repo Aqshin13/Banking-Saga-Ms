@@ -1,0 +1,148 @@
+services:
+  customerservicedb:
+    container_name: customerservicedb
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: customer-service
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 45s
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk==
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_NUM_PARTITIONS: 1
+
+      KAFKA_JMX_PORT: 9999
+
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - ms
+
+  purchaseservicedb:
+    container_name: purchaseservicedb
+    ports:
+      - 5431:5432
+    environment:
+      POSTGRES_DB: purchase-service
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  topupservicedb:
+    container_name: topupservicedb
+    ports:
+      - 5430:5432
+    environment:
+      POSTGRES_DB: topup-service
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
+  customer-service:
+    image: "agshin13/customer-service-saga:s1"
+    container_name: customer-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_APPLICATION_NAME: customer-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://customerservicedb:5432/customer-service
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      customerservicedb:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+
+  purchase-service:
+    image: "agshin13/purchase-service-saga:s1"
+    container_name: purchase-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_APPLICATION_NAME: purchase-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://purchaseservicedb:5432/purchase-service
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      purchaseservicedb:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  top-up-service:
+    image: "agshin13/topup-service-saga:s1"
+    container_name: top-up-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_APPLICATION_NAME: top-up-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://topupservicedb:5432/topup-service
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      topupservicedb:
+        condition: service_healthy
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  orchestrator-service:
+    image: "agshin13/orchestrator-service-saga:s1"
+    container_name: orchestrator-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_APPLICATION_NAME: orchestrator-service
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
+volumes:
+  kafka-data:
+
+
+networks:
+  ms:
+    driver: "bridge"

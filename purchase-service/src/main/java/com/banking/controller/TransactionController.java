@@ -2,6 +2,7 @@ package com.banking.controller;
 
 
 import com.banking.dto.request.PurchaseRequest;
+import com.banking.dto.response.PurchaseResponse;
 import com.banking.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,9 @@ public class TransactionController {
 
     @PostMapping("/purchase")
     public ResponseEntity<?> purchase(@Valid @RequestBody PurchaseRequest request){
-     service.createPurchase(request);
+     PurchaseResponse  response= service.createPurchase(request);
 
-     return ResponseEntity.ok().body("Operation is being process");
+     return ResponseEntity.ok().body(response);
     }
 
 

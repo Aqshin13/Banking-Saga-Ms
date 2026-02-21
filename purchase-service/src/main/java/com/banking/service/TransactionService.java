@@ -4,6 +4,7 @@ package com.banking.service;
 import com.banking.dao.TransactionRepository;
 import com.banking.dto.event.Event;
 import com.banking.dto.request.PurchaseRequest;
+import com.banking.dto.response.PurchaseResponse;
 import com.banking.entity.Transaction;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -20,7 +21,7 @@ public class TransactionService {
     private final KafkaTemplate<String, Event> producer;
 
     @Transactional(rollbackOn = Exception.class)
-    public void createPurchase(PurchaseRequest request) {
+    public PurchaseResponse createPurchase(PurchaseRequest request) {
         Transaction transaction = Transaction
                 .builder()
                 .sender(request.sender())
@@ -40,7 +41,14 @@ public class TransactionService {
 
         producer.send("create-purchase-topic", event);
 
-
+        return PurchaseResponse.builder()
+                .id(fromDB.getId())
+                .sender(fromDB.getSender())
+                .status(fromDB.getStatus())
+                .receiver(fromDB.getReceiver())
+                .type(fromDB.getType())
+                .amount(fromDB.getAmount())
+                .build();
     }
 
     public void onFAILED(Long id) {
@@ -65,7 +73,9 @@ public class TransactionService {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction is not found"));
         transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
-        transaction.setRefund(true);
+        Transaction purchase = transaction.getPurchase();
+        purchase.setRefund(true);
+        transactionRepository.save(purchase);
         transactionRepository.save(transaction);
     }
 

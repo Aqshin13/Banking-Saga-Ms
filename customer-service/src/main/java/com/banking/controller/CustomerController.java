@@ -24,7 +24,7 @@ public class CustomerController {
     public ResponseEntity<CustomerResponse> save(@Valid @RequestBody CustomerSaveRequest request) {
         CustomerResponse customerResponse = customerServiceInter.save(request);
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.CREATED)
                 .body(customerResponse);
     }
 
