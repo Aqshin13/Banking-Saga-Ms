@@ -2,6 +2,7 @@ package com.banking.service.inter;
 
 import com.banking.dto.event.Event;
 import com.banking.dto.request.CustomerSaveRequest;
+import com.banking.dto.response.BalanceResponse;
 import com.banking.dto.response.CustomerResponse;
 import com.banking.entity.Customer;
 
@@ -15,4 +16,7 @@ public interface CustomerServiceInter {
     void processPurchase(Event event);
 
     void processRefund(Event event);
+
+
+    BalanceResponse getBalance(Long id);
 }

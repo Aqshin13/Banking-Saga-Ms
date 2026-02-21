@@ -3,8 +3,10 @@ package com.banking.service.impl;
 import com.banking.dao.CustomerRepository;
 import com.banking.dto.event.Event;
 import com.banking.dto.request.CustomerSaveRequest;
+import com.banking.dto.response.BalanceResponse;
 import com.banking.dto.response.CustomerResponse;
 import com.banking.entity.Customer;
+import com.banking.exception.CustomerNotFoundException;
 import com.banking.mapper.CustomerMapper;
 import com.banking.service.inter.CustomerServiceInter;
 import jakarta.transaction.Transactional;
@@ -45,7 +47,7 @@ public class CustomerServiceImpl implements CustomerServiceInter {
 
 
     @Override
-    @Transactional
+    @Transactional(rollbackOn = Exception.class)
     public void processTransfer(Event event) {
 
         try {
@@ -58,21 +60,18 @@ public class CustomerServiceImpl implements CustomerServiceInter {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackOn = Exception.class)
     public void processPurchase(Event event) {
         try {
             transferMoney(event);
-            System.out.println(event.transactionId()+" ++++++++++++++++++++++");
             producer.send("purchase-end-topic",event.transactionId());
         } catch (Exception exception) {
-            System.out.println(event.transactionId()+" -------------------------");
-
             producer.send("purchase-failed-topic",event.transactionId());
         }
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackOn = Exception.class)
     public void processRefund(Event event) {
          try{
              transferMoney(event);
@@ -81,5 +80,12 @@ public class CustomerServiceImpl implements CustomerServiceInter {
              producer.send("refund-failed-topic",event.transactionId());
 
          }
+    }
+
+    @Override
+    public BalanceResponse getBalance(Long id) {
+       Customer customer= repository.findById(id)
+               .orElseThrow(()->new CustomerNotFoundException("Customer is not found"));
+        return customerMapper.mapToBalanceResponseFromEntity(customer);
     }
 }
